@@ -1,0 +1,160 @@
+﻿<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>Lunch :)</title>
+		<style type="text/css">
+				@font-face {
+				  font-family: 'IBMVGA8';
+				  src: url(ibm_vga8.woff2);
+				  font-weight: normal;
+				  font-style: normal;
+				}
+
+				html, body { 
+					background: #000;
+					color: #00A00A;
+					height:100%;
+                    width: 100%;
+					font-family: IBMVGA8, monospace;
+					font-size: 16px;
+					line-height: 16px;
+				}
+				
+				body {
+				   display: table; 
+				   margin: 0 auto;
+				}
+
+                h2 {
+                    text-align: center;
+                    font-size: 36px;
+                }
+
+				a {
+					color: #00A00A;
+				}
+
+				a:hover {
+					color: #005605;
+					
+				}
+
+				hr {
+					margin-top: 10px;
+					height: 1px;
+					background-color: #00A00A;
+					border-width: 0;
+				}
+
+				table {
+					border: 0;
+					width:100%;
+					margin: 10px;
+					border-collapse: collapse;
+				}
+
+				table th {
+					font-weight: normal;
+					color: #c60;
+					padding: 5px;
+					text-align: left;
+				}
+
+				table tr td {
+					padding: 20px;
+					padding-top: 10px;
+					border: 1px solid #00A00A;
+					border-right: 0;
+					border-left: 0;
+				}
+
+				#center {
+					height: 100%;
+					display: table-cell;   
+					vertical-align: baseline;
+				}
+
+				.title-box p {
+					color: #fff;
+					margin: 0;
+					text-align: center;
+				}
+
+				.box {
+                    width: 285px;
+                    height: 250px;
+					background-color: #000;
+					border: 1px dashed #00A00A;
+                    float: left;
+                    margin: 25px 10px 10px 25px;
+                    padding: 10px;
+				}
+
+                .box h1 {
+                    text-align: center;
+                }
+				
+				.box:hover {
+					border: 1px solid #00A00A;
+				}
+
+                .box.idag {
+                    border: 2px solid #00ff10;
+                }
+
+                .idag {
+                    color: #03ff13;
+                }
+
+                .cur::before {
+					content:"\00a0\00a0";
+				}
+				
+				.cur:hover:before {
+					content:"\BB\A0";
+				}
+
+                @media only screen and (max-width: 600px) {
+                    .box {
+                        float: none;
+                    }
+                }
+        </style>
+        <script>
+            let mode = 0;
+
+            window.onload = (ev) => {
+                mode = localStorage.getItem("mode");
+                Visa();
+            };
+
+            function Visa() {
+                let el = document.getElementById('t');
+                el.style.display = mode == 0 ? 'none' : 'block';
+                document.getElementById('boxar').style.display = el.style.display == 'none' ? 'block' : 'none';
+                document.getElementById('k').innerHTML = mode == 0 ? 'Visa som tabell' : 'Visa som boxar';
+            }
+
+            function Toggle() {
+                mode = mode == 0 ? 1 : 0;
+                localStorage.setItem("mode", mode);
+                Visa();
+            }
+
+        </script>
+	</head>
+	<body>
+        <p style="position: absolute; left: 0; margin-top: 8px; margin-left: 8px;"><span class="cur"><a id="k" href="javascript:Toggle()">Visa som tabell</a></span></p>
+		<div id="center">
+            <div style="margin: auto;">
+                <div id="boxar" style="display: none;">
+                    [BOXAR]
+                </div>
+                <div style="margin-top: 50px;">[TABELL]</div>
+            </div>
+        </div>
+	</body>
+</html>
