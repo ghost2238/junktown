@@ -1,0 +1,16 @@
+{
+  "compileOnSave": true,
+  "compilerOptions": {
+    "emitBOM": true,
+    "noEmitOnError": true,
+    "removeComments": true,
+    "sourceMap": false,
+    "target": "es6",
+    "module": "es6",
+    "moduleResolution": "node",
+  },
+  "exclude": [
+      "bin",
+      "node_modules"
+  ]
+}
