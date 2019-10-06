@@ -64,13 +64,14 @@ namespace Addfood_ui
         {
             var sb = new StringBuilder();
             var sb2 = new StringBuilder();
-            foreach(var veckomeny in HamtaMat().ToList().GroupBy(x => x.Ar+"_"+x.Vecka))
+            sb2.Append($"<table id='t' style='display: none;'>");
+            foreach (var veckomeny in HamtaMat().ToList().GroupBy(x => x.Ar+"_"+x.Vecka))
             {
                 var s = veckomeny.ToList();
                 var spl = veckomeny.Key.Split("_");
                 sb.Append($"<h2>VECKA {spl[1]}</h2>");
 
-                sb2.Append($"<table id='t' style='display: none;'>");
+                
                 foreach (var dag in veckomeny.ToList().GroupBy(x => x.Veckodag))
                 {
                     var idag = ((int)DateTime.Now.DayOfWeek-1 == dag.Key) ? " idag" :"";
@@ -85,8 +86,9 @@ namespace Addfood_ui
                 }
                 sb.Append($"<div style='clear: left;'></div>");
                 sb.Append("<hr />");
-                sb2.Append("</table>");
+                
             }
+            sb2.Append("</table>");
             html = File.ReadAllText("./index.html");
             return html.Replace("[BOXAR]", sb.ToString()).Replace("[TABELL]", sb2.ToString());
         }
