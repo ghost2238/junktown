@@ -1,0 +1,5 @@
+bin
+obj
+.vs
+ui/config.cfg
+*.csproj.user
