@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html >
+    <head>
+       <meta charset="utf-8" />
+    </head>
+    <body>
+	<p id="loading"></p>
+	<button onclick="window.zoomIn()">Zoom+</button>
+	<button onclick="window.zoomOut()">Zoom-</button>
+<canvas id="canvas" width="800" height="800" style="margin:auto; text-align: center; display: block; margin-top: 15px;"></canvas>
+<script>
+
+	
+
+        var img;
+
+		var tileOffX = -64;
+		var tileOffY = -16;
+
+        var offsetX=15;
+        var offsetY=-32;
+        var scaleFactor=1;
+		var d = new Array();
+		var mapName = "[MAP_NAME]";
+		
+		var drawCalls = new Array();
+		
+		var loadedTiles = 0;
+		
+		var yieldAmount = 90;
+		
+		var drawnCalls = 0;
+		
+		[TILES]
+		
+		[FRM_DATA]
+		
+		function zoomIn() { window.scaleFactor += 0.1; draw(); }
+		function zoomOut() { window.scaleFactor -= 0.1; draw(); }
+
+        function getCoords(hexX, hexY) {
+			hexX=hexX+1;
+			hexY=hexY+1;
+		
+            var hexW = 32;
+            var hexH = 16;
+            var hexHEdge = 12;
+
+            x = ((hexY - Math.ceil(hexX/2) - hexX) * hexH);
+            y = (hexY + (Math.floor(hexX / 2) )) * hexHEdge;
+			
+			if(hexX % 2 == 0) {
+				x-=16;
+				y-=12;
+			}
+
+            //if (hexX > 0){
+				//x += (hexX / 2) * hexHEdge;
+			//	y -= 12;
+				//x -= 8;
+			//}
+
+            return { x: x, y: y };
+        }
+
+        function load(name) {
+            var i = new Image();
+            i.src = name;
+            window.d.push(i);
+        }
+
+        function strokeText(ctx, x, y, font, text) {
+            ctx.font = font;
+            ctx.strokeStyle = '#555';
+            ctx.lineWidth = 2;
+            ctx.strokeText(text, x, y);
+            ctx.fillStyle = 'white';
+            ctx.fillText(text, x, y);
+            ctx.strokeText(text, x, y); 
+        }
+
+        function drawOverlay() {
+            var ctx = canvas.getContext('2d');
+            ctx.scale(1/scaleFactor, 1/scaleFactor);
+            strokeText(ctx, 50, 50, "54px Arial", "X: " + window.offsetX + ", Y: " + window.offsetY);
+            strokeText(ctx, 50, window.innerHeight - 50, "54px Arial", window.mapName);
+        }
+
+		function loadTiles() {
+			var el = document.getElementById('loading');
+			let processed = 0;
+			var i = loadedTiles;
+			var tileLen = window.tiles.length;
+			while(processed < window.yieldAmount && window.loadedTiles < tileLen) {
+				el.innerText = 'Loaded ' + window.loadedTiles + ' / ' + tileLen + ", " + window.d[tiles[i]].src;
+				window.drawCalls.push(tiles[i++])
+				c = getCoords(tiles[i++], tiles[i++]);
+				window.loadedTiles+=3;
+				window.drawCalls.push(window.tileOffX+c.x);
+				window.drawCalls.push(window.tileOffY+c.y);
+				processed+=3;
+			}
+			if(window.loadedTiles < tileLen) {
+				setTimeout(loadTiles, 1);
+			} else {
+				el.innerText = 'Loaded all tiles!';
+				[MAP_OBJECTS]
+				var i=0;
+				var y=mapObj.length;
+				console.log(y);
+				while(i<y) {
+					var frmIdx = mapObj[i++]*5;
+					var hexX = mapObj[i++];
+					var hexY = mapObj[i++];
+					//var img = window.d[];
+					
+					el.innerText = 'Loading map object' + i + ' / ' + y + ", " + window.d[window.frmData[frmIdx]].src;
+					var height = window.frmData[frmIdx+1];
+					var width = window.frmData[frmIdx+2];
+					var shiftX = window.frmData[frmIdx+3];
+					var shiftY = window.frmData[frmIdx+4];
+					//if(i < 20) {
+					//	console.log('frm: '+frmIdx+' h: ' + height + ' w: ' + width + ' shiftX: ' + shiftX + ' shiftY: ' + shiftY);
+					//}
+					c = getCoords(hexX, hexY);
+					
+					var xPx = c.x;
+					var yPx = c.y;
+					xPx -= width / 2;
+					xPx += shiftX;
+					yPx -= height;
+					yPx += shiftY;
+					window.drawCalls.push(window.frmData[frmIdx]);
+					window.drawCalls.push(Math.round(xPx));
+					window.drawCalls.push(Math.round(yPx));
+				}
+				
+				[ROOFS]
+				var i=0;
+				var y=roofs.length;
+				while(i<y) {
+					window.drawCalls.push(roofs[i++])
+					c = getCoords(roofs[i++], roofs[i++]);
+					window.drawCalls.push(window.tileOffX+c.x);
+					window.drawCalls.push(window.tileOffY+c.y - 92);
+					
+					//var img = window.d[];
+					//if(img.naturalWidth !== 0) { 
+				}
+			
+				draw();
+			}
+			
+		}
+
+		function initDrawCalls() {
+			
+			//var i=0;
+			//var y=tiles.length;
+			loadTiles();
+			
+			
+			
+			
+		
+		}
+
+		function drawTimeout() {
+			var processed = 0;
+			var x = window.drawnCalls;
+			var y = window.drawCalls.length;
+			var ctx = canvas.getContext('2d');
+			var el = document.getElementById('loading');
+			while(x<y && processed < window.yieldAmount  ) {
+				el.innerText = 'Drawing ' + x + ' / ' + y + ', ' + window.d[window.drawCalls[x]].src + ", idx: " + window.drawCalls[x];
+				
+				
+				if(window.d[window.drawCalls[x]].naturalWidth !== 0) {
+					ctx.drawImage(window.d[window.drawCalls[x++]], window.offsetX*50+window.drawCalls[x++], window.offsetY*50+window.drawCalls[x++]);
+					window.drawnCalls+=3;
+				}
+				processed += 3;
+			}
+			if(window.drawnCalls < window.drawCalls.length) {
+				setTimeout(drawTimeout, 10);
+			}
+		}
+
+        function draw() {
+            var canvas = document.getElementById('canvas');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight - 100;
+            var ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.scale(window.scaleFactor, window.scaleFactor);
+			//console.log("draw()");
+			window.drawnCalls = 0;
+			//setTimeout(drawTimeout(), 10);
+			var x=0;
+			var y=window.drawCalls.length;
+			while(x<y) {
+				//el.innerText = 'Drawing ' + x + ' / ' + y + ', ' + window.d[window.drawCalls[x]].src + ", idx: " + window.drawCalls[x];
+				if(window.d[window.drawCalls[x]].naturalWidth !== 0) {
+					ctx.drawImage(window.d[window.drawCalls[x++]], window.offsetX*50+window.drawCalls[x++], window.offsetY*50+window.drawCalls[x++]);
+					//window.drawnCalls+=3;
+				}
+				//processed += 3;
+			}
+			ctx.scale(1, 1);
+			drawOverlay();
+        }
+        
+		// load tiles
+		var i;
+		[LOAD_CODE]
+		for(var i=0;i<images.length;i++) {
+			load(images[i]);
+		}
+		
+		initDrawCalls();
+		
+        //setTimeout(draw, 100);
+
+        window.onkeydown = function(ev) {
+            if(ev.keyCode == 37) {
+                offsetX+=1;
+                draw();
+                ev.preventDefault();
+            }
+            if(ev.keyCode == 39) {
+                offsetX-=1;
+                draw();
+                ev.preventDefault();
+            }
+            if(ev.keyCode == 38) {
+                offsetY+=1;
+                draw();
+                ev.preventDefault();
+            }
+            if(ev.keyCode == 40) {
+                offsetY-=1;
+                draw();
+                ev.preventDefault();
+            }
+
+            if(ev.keyCode == 109) {
+                scaleFactor-=0.1;
+                draw();
+               ev.preventDefault();
+            }
+            if (ev.keyCode == 107) {
+                scaleFactor+=0.1;
+                draw();
+               ev.preventDefault();
+            }
+        };
+
+
+        
+</script>
+</body>
+</html>
