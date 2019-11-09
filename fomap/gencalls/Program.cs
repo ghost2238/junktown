@@ -62,7 +62,7 @@ namespace gencalls
             List<FRMData> frmData = new List<FRMData>();
             var gfxDict = new Dictionary<int, int>();
 
-            var loadMap = "hub.fomap"; 
+            var loadMap = "bos_lh_0.fomap"; 
 
             foreach (var proto in Directory.GetFiles(@"C:\Users\Markus\Documents\GitHub\fo2238\Server\proto\items", "*.fopro"))
             {
@@ -84,6 +84,9 @@ namespace gencalls
                 }
             }
 
+
+            bool parsingObjects = false;
+            int containerUID = 0;
             int mapType = 0;
             int mapPid = 0;
             int mapX = 0;
@@ -130,32 +133,49 @@ namespace gencalls
                     }
                 }
 
+                if (line.StartsWith("[Objects]"))
+                    parsingObjects = true;
 
-
-                if (line.StartsWith("MapObjType"))
-                    mapType = int.Parse(ParseMapVal(line));
-                if (line.StartsWith("ProtoId"))
-                    mapPid = int.Parse(ParseMapVal(line));
-                if (line.StartsWith("MapX"))
-                    mapX = int.Parse(ParseMapVal(line));
-                if (line.StartsWith("MapY"))
+                if (parsingObjects)
                 {
-                    if (mapType == 2)
-                    {
+                    if (line.StartsWith("MapObjType"))
+                        mapType = int.Parse(ParseMapVal(line));
+                    if (line.StartsWith("ProtoId"))
+                        mapPid = int.Parse(ParseMapVal(line));
+                    if (line.StartsWith("MapX"))
+                        mapX = int.Parse(ParseMapVal(line));
+                    if (line.StartsWith("MapY"))
                         mapY = int.Parse(ParseMapVal(line));
-                        mapobject.Add(new MapObject
+                    if (line.StartsWith("ContainerUID"))
+                        containerUID = int.Parse(ParseMapVal(line));
+
+                    if (line == "")
+                    {
+                        if (mapType == 2 || mapType == 1)
                         {
-                            pid = mapPid,
-                            type = mapType,
-                            x = mapX,
-                            y = mapY
-                        });
+                            // items in containers, don't render.
+                            if (mapType == 2 || (mapType == 1 && containerUID == 0))
+                            {
+                                mapobject.Add(new MapObject
+                                {
+                                    pid = mapPid,
+                                    type = mapType,
+                                    x = mapX,
+                                    y = mapY
+                                });
+                            }
+                            containerUID = 0;
+                            mapType = 0;
+                            mapPid = 0;
+                            mapX = 0;
+                            mapY = 0;
+                        }
                     }
                 }
             }
 
             var mapObjList = new List<string>();
-            foreach (var m in mapobject)
+            foreach (var m in mapobject.OrderBy(m => m.x + m.y * 2))
             {
                 var proto = protos.Where(x => x.pid == m.pid).FirstOrDefault();
                 var idx = gfx.IndexOf(proto.picMap);
@@ -170,30 +190,59 @@ namespace gencalls
                     gfx.Add(proto.picMap);
                     load.Add($"'{proto.picMap.Replace("frm", "png")}'");
                     // load frmData
-                    
-                    var falloutFRM = FalloutFRMLoader.LoadFRM(File.ReadAllBytes(mapDir + proto.picMap), Color.FromArgb(11,0,11));
 
-                    // No png on disk? save it...
-                    var pngPath = (mapDir + proto.picMap).Replace("frm", "png");
-                    if (!File.Exists(pngPath))
+
+                    if (proto.picMap.Contains(".png"))
                     {
-                        var c = new Bitmap(falloutFRM.Frames[0]);
-                        c.MakeTransparent(Color.FromArgb(11, 0, 11));
-                        c.Save(pngPath, ImageFormat.Png);
+                        Image img = Image.FromFile(mapDir + proto.picMap);
+                        var data = new FRMData
+                        {
+                            gfx = gfx.Count - 1,
+                            height = img.Height,
+                            width = img.Width,
+                            shiftX = 0,
+                            shiftY = 0
+                        };
+                        frmData.Add(data);
+                        gfxDict[gfx.Count - 1] = frmData.Count - 1;
+                        frmIdx = frmData.Count - 1;
                     }
-
-                    var shift = falloutFRM.PixelShift;
-                    var data = new FRMData
+                    else
                     {
-                        gfx = gfx.Count - 1,
-                        height = falloutFRM.Frames[0].Height,
-                        width = falloutFRM.Frames[0].Width,
-                        shiftX = shift.X,
-                        shiftY = shift.Y
-                    };
-                    frmData.Add(data);
-                    gfxDict[gfx.Count - 1] = frmData.Count - 1;
-                    frmIdx = frmData.Count - 1;
+                        FalloutFRM falloutFRM = null;
+                        try
+                        {
+                            falloutFRM = FalloutFRMLoader.LoadFRM(File.ReadAllBytes(mapDir + proto.picMap), Color.FromArgb(11, 0, 11));
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine("Unable to open " + mapDir + proto.picMap);
+                        }
+
+
+
+                        // No png on disk? save it...
+                        var pngPath = (mapDir + proto.picMap).Replace("frm", "png");
+                        if (!File.Exists(pngPath))
+                        {
+                            var c = new Bitmap(falloutFRM.Frames[0]);
+                            c.MakeTransparent(Color.FromArgb(11, 0, 11));
+                            c.Save(pngPath, ImageFormat.Png);
+                        }
+
+                        var shift = falloutFRM.PixelShift;
+                        var data = new FRMData
+                        {
+                            gfx = gfx.Count - 1,
+                            height = falloutFRM.Frames[0].Height,
+                            width = falloutFRM.Frames[0].Width,
+                            shiftX = shift.X,
+                            shiftY = shift.Y
+                        };
+                        frmData.Add(data);
+                        gfxDict[gfx.Count - 1] = frmData.Count - 1;
+                        frmIdx = frmData.Count - 1;
+                    }
                 }
                 else
                 {

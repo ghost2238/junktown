@@ -7,16 +7,21 @@
 	<p id="loading"></p>
 	<button onclick="window.zoomIn()">Zoom+</button>
 	<button onclick="window.zoomOut()">Zoom-</button>
+	<button onclick="window.setDay()">Set day</button>
+	<button onclick="window.setNight()">Set night</button>
+	<label>Share location: <input id="link-cur" type="text" style="width: 400px;" readonly /></label>
+	<input type="range" min="0" max="200" value="100" class="slider" id="color-r" style="display: block;"><span id="color-r-text">R:</span>
+	<input type="range" min="0" max="200" value="100" class="slider" id="color-g" style="display: block;"><span id="color-g-text">G:</span>
+	<input type="range" min="0" max="200" value="100" class="slider" id="color-b" style="display: block;"><span id="color-b-text">B:</span>
 <canvas id="canvas" width="800" height="800" style="margin:auto; text-align: center; display: block; margin-top: 15px;"></canvas>
 <script>
-
-	
-
-        var img;
 
 		var tileOffX = -64;
 		var tileOffY = -16;
 
+		var r=1.0;
+		var g=1.0;
+		var b=1.0;
         var offsetX=15;
         var offsetY=-32;
         var scaleFactor=1;
@@ -27,16 +32,43 @@
 		
 		var loadedTiles = 0;
 		
-		var yieldAmount = 90;
+		var yieldAmount = 500;
 		
 		var drawnCalls = 0;
 		
 		[TILES]
 		
 		[FRM_DATA]
+				
+		function zoomIn() { window.scaleFactor += 0.1; draw(false); }
+		function zoomOut() { window.scaleFactor -= 0.1; draw(false); }
+		function setDay() {
+			setR(1.0);
+			setG(1.0);
+			setB(1.0);
+		}
+		function setNight() {
+			setR(0.19);
+			setG(0.19);
+			setB(0.43);
+		}
 		
-		function zoomIn() { window.scaleFactor += 0.1; draw(); }
-		function zoomOut() { window.scaleFactor -= 0.1; draw(); }
+		function setR(val) {
+			window.r = val;
+			document.getElementById('color-r').value=window.r*100;
+			document.getElementById('color-r-text').innerText='R: '+window.r;
+		}
+		function setG(val) {
+			window.g = val;
+			document.getElementById('color-g').value=window.g*100;
+			document.getElementById('color-g-text').innerText='G: '+window.g;
+		}
+		function setB(val) {
+			window.b = val;
+			document.getElementById('color-b').value=window.b*100;
+			document.getElementById('color-b-text').innerText='B: '+window.b;
+		}
+		
 
         function getCoords(hexX, hexY) {
 			hexX=hexX+1;
@@ -53,12 +85,6 @@
 				x-=16;
 				y-=12;
 			}
-
-            //if (hexX > 0){
-				//x += (hexX / 2) * hexHEdge;
-			//	y -= 12;
-				//x -= 8;
-			//}
 
             return { x: x, y: y };
         }
@@ -86,10 +112,33 @@
             strokeText(ctx, 50, window.innerHeight - 50, "54px Arial", window.mapName);
         }
 
+		function loadSettings() {
+			// load URL hash...
+			if(location.hash != '') {
+				let hash = location.hash.substr(1);
+				let spl = hash.split(',');
+				for(let s of spl) {
+					let vals = s.split('=');
+					if(vals[0] == 'x') {
+						window.offsetX = parseInt(vals[1]);
+					}
+					if(vals[0] == 'y') {
+						window.offsetY = parseInt(vals[1]);
+					}
+					if(vals[0] == 'z') {
+						window.scaleFactor = parseFloat(vals[1]);
+					}
+					if(vals[0] == 'r') { setR(parseFloat(vals[1])) }
+					if(vals[0] == 'g') { setG(parseFloat(vals[1])) }
+					if(vals[0] == 'b') { setB(parseFloat(vals[1])) }
+				}
+			}
+		}
+
 		function loadTiles() {
 			var el = document.getElementById('loading');
 			let processed = 0;
-			var i = loadedTiles;
+			var i = window.loadedTiles;
 			var tileLen = window.tiles.length;
 			while(processed < window.yieldAmount && window.loadedTiles < tileLen) {
 				el.innerText = 'Loaded ' + window.loadedTiles + ' / ' + tileLen + ", " + window.d[tiles[i]].src;
@@ -100,28 +149,24 @@
 				window.drawCalls.push(window.tileOffY+c.y);
 				processed+=3;
 			}
-			if(window.loadedTiles < tileLen) {
-				setTimeout(loadTiles, 1);
+			if(window.loadedTiles < tileLen && tileLen != undefined) {
+				setTimeout(loadTiles, 50);
 			} else {
 				el.innerText = 'Loaded all tiles!';
 				[MAP_OBJECTS]
 				var i=0;
 				var y=mapObj.length;
-				console.log(y);
+				//console.log(y);
 				while(i<y) {
 					var frmIdx = mapObj[i++]*5;
 					var hexX = mapObj[i++];
 					var hexY = mapObj[i++];
-					//var img = window.d[];
 					
-					el.innerText = 'Loading map object' + i + ' / ' + y + ", " + window.d[window.frmData[frmIdx]].src;
+					el.innerText = 'Loading map object ' + i + ' / ' + y + ", " + window.d[window.frmData[frmIdx]].src;
 					var height = window.frmData[frmIdx+1];
 					var width = window.frmData[frmIdx+2];
 					var shiftX = window.frmData[frmIdx+3];
 					var shiftY = window.frmData[frmIdx+4];
-					//if(i < 20) {
-					//	console.log('frm: '+frmIdx+' h: ' + height + ' w: ' + width + ' shiftX: ' + shiftX + ' shiftY: ' + shiftY);
-					//}
 					c = getCoords(hexX, hexY);
 					
 					var xPx = c.x;
@@ -143,12 +188,13 @@
 					c = getCoords(roofs[i++], roofs[i++]);
 					window.drawCalls.push(window.tileOffX+c.x);
 					window.drawCalls.push(window.tileOffY+c.y - 92);
-					
-					//var img = window.d[];
-					//if(img.naturalWidth !== 0) { 
 				}
+				
+				
+				
+				el.innerText = 'All loaded!';
 			
-				draw();
+				draw(false);
 			}
 			
 		}
@@ -157,12 +203,7 @@
 			
 			//var i=0;
 			//var y=tiles.length;
-			loadTiles();
-			
-			
-			
-			
-		
+			loadTiles();		
 		}
 
 		function drawTimeout() {
@@ -186,7 +227,34 @@
 			}
 		}
 
-        function draw() {
+		function light(ctx) {
+			var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+			var buf = new ArrayBuffer(imageData.data.length);
+			var buf8 = new Uint8ClampedArray(buf);
+			var data = new Uint32Array(buf);
+			var j = 0;
+			for (var i = 0; i < data.length*4; i+=4) {
+					var r = (imageData.data[i] * window.r);
+					var g = (imageData.data[i + 1] * window.g);
+					var b = (imageData.data[i + 2] * window.b);
+					data[j] =
+					(255   << 24) |	// alpha
+					(b   << 16) |   // blue
+					(g   <<  8) |   // green
+					 r;		        // red
+					 
+				j++;
+			}
+			imageData.data.set(buf8);
+			ctx.putImageData(imageData, 0, 0);
+		}
+
+        function draw(redrawThread) {
+			// update
+			var link = document.getElementById('link-cur');
+			link.value = document.location.protocol +"//"+ document.location.hostname + document.location.pathname + 
+				'#x='+window.offsetX+',y='+window.offsetY+',z='+window.scaleFactor+',r='+window.r+',g='+window.g+',b='+window.b;
+		
             var canvas = document.getElementById('canvas');
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight - 100;
@@ -203,11 +271,18 @@
 				if(window.d[window.drawCalls[x]].naturalWidth !== 0) {
 					ctx.drawImage(window.d[window.drawCalls[x++]], window.offsetX*50+window.drawCalls[x++], window.offsetY*50+window.drawCalls[x++]);
 					//window.drawnCalls+=3;
+				} else {
+					x+=3;
 				}
 				//processed += 3;
 			}
 			ctx.scale(1, 1);
+			light(ctx);
 			drawOverlay();
+			
+			if(redrawThread) {
+				setTimeout(function() { draw(true); }, 300);
+			}
         }
         
 		// load tiles
@@ -217,40 +292,58 @@
 			load(images[i]);
 		}
 		
-		initDrawCalls();
+		loadSettings();
 		
-        //setTimeout(draw, 100);
+		document.getElementById('color-r').onchange = function(ev) {
+			window.r = ev.target.value / 100;
+			document.getElementById('color-r-text').innerText='R: '+window.r;
+			draw(false);
+		};
+		document.getElementById('color-g').onchange = function(ev) {
+			window.g = ev.target.value / 100;
+			document.getElementById('color-g-text').innerText='G: '+window.g;
+			draw(false);
+		};
+		document.getElementById('color-b').onchange = function(ev) {
+			window.b = ev.target.value / 100;
+			document.getElementById('color-b-text').innerText='B: '+window.b;
+			draw(false);
+		};
+		
+		initDrawCalls();
+				
+        setTimeout(function() { draw(true); }, 300);
 
         window.onkeydown = function(ev) {
             if(ev.keyCode == 37) {
                 offsetX+=1;
-                draw();
+                draw(false);
                 ev.preventDefault();
             }
             if(ev.keyCode == 39) {
                 offsetX-=1;
-                draw();
+                draw(false);
                 ev.preventDefault();
             }
             if(ev.keyCode == 38) {
                 offsetY+=1;
-                draw();
+                draw(false);
                 ev.preventDefault();
             }
             if(ev.keyCode == 40) {
                 offsetY-=1;
-                draw();
+                draw(false);
                 ev.preventDefault();
             }
 
             if(ev.keyCode == 109) {
                 scaleFactor-=0.1;
-                draw();
+                draw(false);
                ev.preventDefault();
             }
             if (ev.keyCode == 107) {
                 scaleFactor+=0.1;
-                draw();
+                draw(false);
                ev.preventDefault();
             }
         };
