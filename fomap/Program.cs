@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace gencalls
+namespace fomap
 {
     class FOnlineProto
     {
@@ -62,7 +62,7 @@ namespace gencalls
             List<FRMData> frmData = new List<FRMData>();
             var gfxDict = new Dictionary<int, int>();
 
-            var loadMap = "bos_lh_0.fomap"; 
+            var loadMap = "ul_junkyard.fomap"; 
 
             foreach (var proto in Directory.GetFiles(@"C:\Users\Markus\Documents\GitHub\fo2238\Server\proto\items", "*.fopro"))
             {
@@ -76,7 +76,7 @@ namespace gencalls
                     {
                         picMap = line.Split('=')[1].Replace(@"art\","").Replace(@"\","/");
                         protos.Add(new FOnlineProto
-                        {
+                        {           
                             pid = pid,
                             picMap = picMap
                         });
@@ -87,7 +87,7 @@ namespace gencalls
 
             bool parsingObjects = false;
             int containerUID = 0;
-            int mapType = 0;
+            MapObjectType mapType = 0;
             int mapPid = 0;
             int mapX = 0;
             int mapY = 0;
@@ -99,7 +99,7 @@ namespace gencalls
                     {
                         continue;
                     }
-
+    
                     var spl = line.Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries);
                     var img = spl[3].Replace(@"art\tiles\", "tiles/").ToUpper().Replace(".FRM", ".png").Replace("TILES", "tiles");
                     var idx = gfx.IndexOf(img);
@@ -139,7 +139,7 @@ namespace gencalls
                 if (parsingObjects)
                 {
                     if (line.StartsWith("MapObjType"))
-                        mapType = int.Parse(ParseMapVal(line));
+                        mapType = (MapObjectType)int.Parse(ParseMapVal(line));
                     if (line.StartsWith("ProtoId"))
                         mapPid = int.Parse(ParseMapVal(line));
                     if (line.StartsWith("MapX"))
@@ -151,15 +151,15 @@ namespace gencalls
 
                     if (line == "")
                     {
-                        if (mapType == 2 || mapType == 1)
+                        if (mapType == MapObjectType.Scenery || mapType == MapObjectType.Item)
                         {
                             // items in containers, don't render.
-                            if (mapType == 2 || (mapType == 1 && containerUID == 0))
+                            if (mapType == MapObjectType.Scenery || (mapType == MapObjectType.Item && containerUID == 0))
                             {
                                 mapobject.Add(new MapObject
                                 {
                                     pid = mapPid,
-                                    type = mapType,
+                                    type = (int)mapType,
                                     x = mapX,
                                     y = mapY
                                 });
@@ -173,6 +173,20 @@ namespace gencalls
                     }
                 }
             }
+
+            /*protos.Add(new FOnlineProto
+            {
+                pid = 1207,
+                picMap = "scenery/fo-rotators.png"
+            });
+
+            mapobject.Add(new MapObject()
+            {
+                pid = 1207,
+                type = 2,
+                x = 119,
+                y = 236,
+            });*/
 
             var mapObjList = new List<string>();
             foreach (var m in mapobject.OrderBy(m => m.x + m.y * 2))
@@ -189,19 +203,24 @@ namespace gencalls
                     
                     gfx.Add(proto.picMap);
                     load.Add($"'{proto.picMap.Replace("frm", "png")}'");
-                    // load frmData
-
-
                     if (proto.picMap.Contains(".png"))
                     {
+                        int shiftY = 0;
+                        int shiftX = 0;
+                        /*if (proto.picMap.Contains("rotators"))
+                        {
+                            shiftY = -25;
+                            shiftX = 8;
+                        }*/
+
                         Image img = Image.FromFile(mapDir + proto.picMap);
                         var data = new FRMData
                         {
                             gfx = gfx.Count - 1,
                             height = img.Height,
                             width = img.Width,
-                            shiftX = 0,
-                            shiftY = 0
+                            shiftX = shiftX,
+                            shiftY = shiftY
                         };
                         frmData.Add(data);
                         gfxDict[gfx.Count - 1] = frmData.Count - 1;
@@ -209,17 +228,17 @@ namespace gencalls
                     }
                     else
                     {
+                        // load frmData
+                        var file = mapDir + proto.picMap;
                         FalloutFRM falloutFRM = null;
                         try
                         {
-                            falloutFRM = FalloutFRMLoader.LoadFRM(File.ReadAllBytes(mapDir + proto.picMap), Color.FromArgb(11, 0, 11));
+                            falloutFRM = FalloutFRMLoader.LoadFRM(File.ReadAllBytes(file), Color.FromArgb(11, 0, 11));
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine("Unable to open " + mapDir + proto.picMap);
+                            Console.WriteLine($"Unable to open {file}: {ex.Message}");
                         }
-
-
 
                         // No png on disk? save it...
                         var pngPath = (mapDir + proto.picMap).Replace("frm", "png");
@@ -229,6 +248,7 @@ namespace gencalls
                             c.MakeTransparent(Color.FromArgb(11, 0, 11));
                             c.Save(pngPath, ImageFormat.Png);
                         }
+
 
                         var shift = falloutFRM.PixelShift;
                         var data = new FRMData
@@ -264,7 +284,7 @@ namespace gencalls
 
             var mapNameNoExt = loadMap.Split('.')[0];
 
-            var template = File.ReadAllText(@"C:\Users\Markus\Documents\GitHub\junktown\fomap\gencalls\template.html");
+            var template = File.ReadAllText(@"C:\Users\Markus\Documents\GitHub\junktown\fomap\template.html");
             template = template.Replace("[LOAD_CODE]", "var images = [" + string.Join(",", load) + "];");
             template = template.Replace("[TILES]", "var tiles = [" + string.Join(",", tiles) + "];");
             template = template.Replace("[ROOFS]", "var roofs = [" + string.Join(",", roofs) + "];");

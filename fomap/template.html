@@ -22,19 +22,21 @@
 		var r=1.0;
 		var g=1.0;
 		var b=1.0;
-        var offsetX=15;
-        var offsetY=-32;
+        var offsetX=26;
+        var offsetY=-21;
         var scaleFactor=1;
 		var d = new Array();
 		var mapName = "[MAP_NAME]";
 		
 		var drawCalls = new Array();
-		
 		var loadedTiles = 0;
-		
 		var yieldAmount = 500;
-		
 		var drawnCalls = 0;
+		
+		var loaded = false;
+		var lastDraw = new Date().getTime();
+		
+		var lightArr;
 		
 		[TILES]
 		
@@ -46,11 +48,13 @@
 			setR(1.0);
 			setG(1.0);
 			setB(1.0);
+			draw(false);
 		}
 		function setNight() {
 			setR(0.19);
 			setG(0.19);
 			setB(0.43);
+			draw(false);
 		}
 		
 		function setR(val) {
@@ -192,7 +196,9 @@
 				
 				
 				
-				el.innerText = 'All loaded!';
+				window.loaded = true;
+				el.setAttribute('style', 'display: none;');
+				setNight();
 			
 				draw(false);
 			}
@@ -227,16 +233,181 @@
 			}
 		}
 
+		function clamp(num, min, max) {
+		  return Math.min(Math.max(num, min), max);
+		};
+
+		function lightPixel(canvas, x, y, add, checkArr) {
+			var i = (x+(canvas.width*y))*4;
+			if(isNaN(i)) {
+				return;
+			}
+			
+			if(checkArr != null && checkArr[i] != 0) {
+				return;
+			}
+			if(checkArr != null) {
+				checkArr[i] = 1;
+			}
+			window.lightArr[i] += add;
+			window.lightArr[i + 1] += add;
+			window.lightArr[i + 2] += add/1.5;
+			
+			if(window.lightArr[i] > 0.8) { window.lightArr[i]=0.8; }
+			if(window.lightArr[i+1] > 0.8) { window.lightArr[i+1]=0.8; }
+			if(window.lightArr[i+2] > 0.8) { window.lightArr[i+2]=0.8; }
+			
+		}
+
 		function light(ctx) {
 			var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 			var buf = new ArrayBuffer(imageData.data.length);
 			var buf8 = new Uint8ClampedArray(buf);
 			var data = new Uint32Array(buf);
+			
+			window.lightArr = new Array(data.length*4).fill(0);
+			for (var i = 0; i < imageData.data.length; i++) {
+				window.lightArr[i] = 0;
+			}
+			
+			//console.log(canvas.width);
+			
+			//var start = ((canvas.width/2)*200)*4;
+			//var x = 200;
+			//var y = 200;
+			
+			var xm = 410;
+			var ym = 428;
+			
+			//Math.sqrt( ((250-290)*2)+((250-290)*2)) ;
+		    //console.log(Math.sqrt(Math.abs(((250-290)*2))));
+
+			// diffuse
+			var diffArr = new Array(data.length*4).fill(0);
+			for (var c=0;c<900;c++) {
+				for(var ang=0;ang<360;ang++) {
+					var rad = ang * (Math.PI/180);
+					var dx = Math.round(xm+50+(Math.sin(rad)*c));
+					var dy = Math.round(ym+(Math.cos(rad)*c));
+				    var add = (0.3)-(c/1000);
+					if(add < 0) {
+						continue;
+					}
+					lightPixel(canvas, dx, dy, add, diffArr);
+					for(var i=1;i<=2;i++) {
+						lightPixel(canvas, dx, dy+i, add, diffArr);
+						lightPixel(canvas, dx, dy-i, add, diffArr);
+						lightPixel(canvas, dx+i, dy, add, diffArr);
+						lightPixel(canvas, dx-i, dy, add, diffArr);
+						lightPixel(canvas, dx-i, dy-i, add, diffArr);
+						lightPixel(canvas, dx+i, dy+i, add, diffArr);
+					}
+				}
+			}
+			
+			var diffArr = new Array(data.length*4).fill(0);
+			for (var c=0;c<800;c++) {
+				for(var ang=0;ang<360;ang++) {
+					var rad = ang * (Math.PI/180);
+					var dx = Math.round(xm+50+(Math.sin(rad)*c));
+					var dy = Math.round(ym+(Math.cos(rad)*c));
+				    var add = (0.5)-(c/250);
+					if(add < 0) {
+						continue;
+					}
+					lightPixel(canvas, dx, dy, add, diffArr);
+					for(var i=1;i<=2;i++) {
+						lightPixel(canvas, dx, dy+i, add, diffArr);
+						lightPixel(canvas, dx, dy-i, add, diffArr);
+						lightPixel(canvas, dx+i, dy, add, diffArr);
+						lightPixel(canvas, dx-i, dy, add, diffArr);
+						lightPixel(canvas, dx-i, dy-i, add, diffArr);
+						lightPixel(canvas, dx+i, dy+i, add, diffArr);
+					}
+				}
+			}
+
+			// dir
+			/*var dirArr = new Array(data.length*4).fill(0);
+			for (var c=0;c<900;c++) {
+				for(var ang=30;ang<190;ang++) {
+				//for (var y=ym;y<900;y++) {
+					//var dx = xm - x;
+					//var dy = ym - y;
+					//var dist = Math.sqrt(((Math.abs(xm-x) )*2) + ((Math.abs(ym-y))*2)); 
+					//var atan2 = Math.atan2(ym, xm) - Math.atan2(y, x);
+					//var neg_atan2 = -Math.atan2(ym-y, xm-x);
+					
+					//var br3=0;
+					//if(atan2 > 0.2 && atan2 < 0.75) {
+					//	br3=1.0;
+					//}
+					var rad = ang * (Math.PI/180);
+					var dx = Math.round(xm+(Math.sin(rad)*c));
+					var dy = Math.round(ym+(Math.cos(rad)*c));
+				    var b = 0;
+					if(ang < 75) {
+						var b = (75 - ang) / 40
+					}
+					if(ang > 110) {
+						var b = (ang - 111) / 40
+					}
+					
+					var add = (0.6-b)-(c/500);
+					if(add < 0) {
+						continue;
+					}
+					
+					//dx = Math.round(dx);
+					//dx2 = Math.floor(dx);
+					//dy1 = Math.ceil(dy);
+					//dy2 = Math.floor(dy);
+					//var i=Math.ceil(c/200);
+					
+					lightPixel(dx, dy, add, dirArr);
+					for(var i=1;i<=2;i++) {
+						lightPixel(canvas, dx, dy+i, add, dirArr);
+						lightPixel(canvas, dx, dy-i, add, dirArr);
+						lightPixel(canvas, dx+i, dy, add, dirArr);
+						lightPixel(canvas, dx-i, dy, add, dirArr);
+						lightPixel(canvas, dx-i, dy-i, add, dirArr);
+						lightPixel(canvas, dx+i, dy+i, add, dirArr);
+					}
+					
+					//var asin = Math.sin(ym-y);
+					//var br3 = 2.0 - (dist / (Math.pow(2.25, atan2))  );
+					//var br2 = 2.0 - (dist / (Math.pow(2.25, neg_atan2))  );
+					/*if(br2 < 0) {
+						br2=0.0;
+					}*/
+					//var br3 = 2.0 - Math.cos(atan2+0.25) - (dist / (Math.pow(2.25, Math.cos(atan2) )));
+					/*if(br3<0.0) {
+						br3=0.0;
+					}
+					br=0;
+					br2=0;*/
+					//var br3 = 1.0 - (dist / (Math.pow(1.0, Math.sin(atan2)))  );
+					//var br3 = 2.0 - (dist / (Math.pow(2.25, atan2)));
+					//var br = 1.0 * -(Math.cos(atan2+0.25)/1.25) - (dist/(16 - (0.25*Math.cos(atan2)))) ;
+					//var br2=1.5 * -(Math.cos(atan2+0.25)/1.25) - (dist/(32 - (0.25*Math.cos(atan2)))) ;
+					//var br=1.25 * -(clamp(-0.75,1,Math.cos(atan2+0.25))/1.25) - (dist/(26 - (clamp(0,0.5,Math.cos(atan2)))));
+					/*var add = br+br2+br3;
+					
+					if(add<0.0) {
+						add=0.0;
+					} 
+					if(add>1.0) {
+						add=1.0;
+					}*/
+					
+					
+			//	}
+			//}
 			var j = 0;
 			for (var i = 0; i < data.length*4; i+=4) {
-					var r = (imageData.data[i] * window.r);
-					var g = (imageData.data[i + 1] * window.g);
-					var b = (imageData.data[i + 2] * window.b);
+					var r = (imageData.data[i] * (window.lightArr[i] + window.r));
+					var g = (imageData.data[i+1] * (window.lightArr[i+1] + window.g));
+					var b = (imageData.data[i+2] * (window.lightArr[i+2] + window.b));
 					data[j] =
 					(255   << 24) |	// alpha
 					(b   << 16) |   // blue
@@ -247,17 +418,88 @@
 			}
 			imageData.data.set(buf8);
 			ctx.putImageData(imageData, 0, 0);
+						
+			/*for (var x=200;x<800;x++) {
+				for (var y=200;y<900;y++) {
+				//var rad = z * (Math.PI/180);
+				
+				//var r = 100;
+
+				//var br = 0.0;
+				var dist = Math.sqrt(((Math.abs(xm-x) )*2) + ((Math.abs(ym-y))*2)); 
+
+				/*var br2 = 1.25 - (Math.sin(atan2-1)) - dist/8;
+				if(br2<1) {
+					br2;
+				}*/
+				//br2 = 1.0 - dist/120;
+				
+				
+				
+				//br = 2.0 * (Math.abs(Math.sin(atan2*0.5))/1.25) - dist/16;
+				
+				/*br=br;
+
+
+			}
+			}*/
+
+			/*for (var x=200;x<400;x++) {
+				for (var y=200;y<400;y++) {
+					var i = ((x+(canvas.width*y))*4)
+					
+					//console.log(Math.sqrt(1));
+					var dist = Math.sqrt(((Math.abs(xm-x) )*2) + ((Math.abs(ym-y))*2)); 
+					/*if(x >580) {
+						console.log(dist);
+					}*/
+					//console.log(dist);
+					//var atan2 = Math.atan2(ym-y, xm-x);
+					//var xtan2 = Math.atan2(xm-y, ym-x);
+					//console.log(atan2);
+					
+			/*		br=atan2 - (dist/10);
+					if(br<0) {
+						br=0;
+					}
+					
+					//if(dist>15) {
+						
+					//}
+					
+					var r = (imageData.data[i] * (window.r+br));
+					var g = (imageData.data[i + 1] * (window.g+br));
+					var b = (imageData.data[i + 2] * (window.b+br));
+					
+					
+					
+					
+					data[x+(canvas.width*y)] =
+					(255   << 24) |	// alpha
+					(b   << 16) |   // blue
+					(g   <<  8) |   // green
+					 r;		        // red
+				}
+			}*/
+			
+
 		}
 
         function draw(redrawThread) {
+			// No need to redraw if it was less than 50 ms from last frame.
+			if(new Date().getTime() - window.lastDraw < 50) {
+				//console.log(new Date().getTime() - window.lastDraw);
+				return;
+			}
+		
 			// update
 			var link = document.getElementById('link-cur');
 			link.value = document.location.protocol +"//"+ document.location.hostname + document.location.pathname + 
 				'#x='+window.offsetX+',y='+window.offsetY+',z='+window.scaleFactor+',r='+window.r+',g='+window.g+',b='+window.b;
 		
             var canvas = document.getElementById('canvas');
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight - 100;
+            canvas.width = window.innerWidth - 10;
+            canvas.height = window.innerHeight - (window.loaded ? 185 : 235);
             var ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.scale(window.scaleFactor, window.scaleFactor);
@@ -283,6 +525,8 @@
 			if(redrawThread) {
 				setTimeout(function() { draw(true); }, 300);
 			}
+			
+			window.lastDraw = new Date().getTime();
         }
         
 		// load tiles

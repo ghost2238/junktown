@@ -6,8 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{79197DD8-D4F1-4B09-B238-D5847F6E67D7}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>gencalls</RootNamespace>
-    <AssemblyName>gencalls</AssemblyName>
+    <RootNamespace>fomap</RootNamespace>
+    <AssemblyName>fomap</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
