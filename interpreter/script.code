@@ -1,0 +1,15 @@
+main(string path, num awesome) {
+	let c
+	//let hello = "Hello"
+	let a = 2
+	let b = a * (5 - 2)
+	//let number = 1207 * 10
+	//let numbers = { number, 10, 15 }
+	//msgbox(2*number)
+}
+
+add(num a, num b) {
+	ret a * b
+}
+
+	
