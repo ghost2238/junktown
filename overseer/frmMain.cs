@@ -9,7 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Vree.Data;
+//using Vree.Data;
 
 namespace Overseer
 {
@@ -18,7 +18,7 @@ namespace Overseer
 
     public partial class frmMain : Form
     {
-        VreeDB db;
+        //VreeDB db;
 
         public frmMain()
         {
@@ -69,8 +69,8 @@ namespace Overseer
         private void ReadFromMemory()
         {
             this.dataGridView1.Rows.Clear();
-            db = VreeDB.Load(VreeDB.FindPath());
-            foreach(var a in db.Variables)
+            //db = VreeDB.Load(VreeDB.FindPath());
+            /*foreach(var a in db.Variables)
             {
                 if (a.Type == null)
                     continue;
@@ -79,15 +79,15 @@ namespace Overseer
                 {
                     switch (a.Type.BasicType)
                     {
-                        case BasicType.UINT8: Globals.Byte((int)a.Offset).ToGrid(a.Name); break;
-                        case BasicType.INT8: Globals.Byte((int)a.Offset).ToGrid(a.Name); break;
-                        case BasicType.UINT16: Globals.Int16((int)a.Offset).ToGrid(a.Name); break;
-                        case BasicType.UINT32: Globals.Int32((int)a.Offset).ToGrid(a.Name); break;
-                        case BasicType.CHARP: Globals.CString((int)a.Offset).ToGrid(a.Name); break;
+                        //case BasicType.UINT8: Globals.Byte((int)a.Offset).ToGrid(a.Name); break;
+                        //case BasicType.INT8: Globals.Byte((int)a.Offset).ToGrid(a.Name); break;
+                        //case BasicType.UINT16: Globals.Int16((int)a.Offset).ToGrid(a.Name); break;
+                        //case BasicType.UINT32: Globals.Int32((int)a.Offset).ToGrid(a.Name); break;
+                        //case BasicType.CHARP: Globals.CString((int)a.Offset).ToGrid(a.Name); break;
                     }
                 }
                 
-            }
+            }*/
         }
     }
 }

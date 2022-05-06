@@ -1,6 +1,6 @@
 ﻿// https://wiki.hydrogenaud.io/index.php?title=Cue_sheet
 
-string fmt="";
+string fmt;
 var output = new List<string>();
 var track = 1;
 var file = string.Join(" ", args);
@@ -27,17 +27,26 @@ foreach(var row in File.ReadAllLines(file))
         var spl = row.Split(" ");
         var time = spl[0].Split(":");
 
-        var h = int.Parse(time[0]);
-        var m = int.Parse(time[1]);
-        var s = int.Parse(time[2]);
-
+        var h = 0;
+        var m = 0;
+        var s = 0;
+        if (time.Length == 3)
+        {
+            h = int.Parse(time[0]);
+            m = int.Parse(time[1]);
+            s = int.Parse(time[2]);
+        }
+        else if(time.Length == 2)
+        {
+            m = int.Parse(time[0]);
+            s = int.Parse(time[1]);
+        }
         m += h * 60;
 
-        output.Add($"  TRACK {track++.ToString("D2")} AUDIO");
+        output.Add($"  TRACK {track++:D2} AUDIO");
         output.Add($"    TITLE \"{row.Substring(spl[0].Length+1)}\"");
-        output.Add($"    PERFORMER \"\"");
+        output.Add("    PERFORMER \"\"");
         output.Add($"    INDEX 01 {m}:{s}:00");
     }
-    
 }
 File.WriteAllLines(file.Replace(".txt", ".cue"), output.ToArray());
