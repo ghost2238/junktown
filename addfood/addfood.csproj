@@ -9,7 +9,7 @@
     <PackageReference Include="HtmlAgilityPack" Version="1.11.12" />
     <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" Version="2.2.0" />
-    <PackageReference Include="MySqlConnector" Version="0.59.0" />
+    <PackageReference Include="MySqlConnector" Version="2.6.1" />
   </ItemGroup>
 
 </Project>
